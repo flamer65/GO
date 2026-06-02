@@ -19,9 +19,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 	"time"
-	"math"
 )
 
 func main() {
@@ -81,7 +81,7 @@ func main() {
 		LastName:  "Davis",
 		Age:       22,
 		Email:     "eve@example.com",
-	} 
+	}
 	fmt.Printf("&literal: %+v (type: %T)\n", *eve, eve)
 
 	// Anonymous structs — useful for one-off data, tests, and JSON
@@ -308,6 +308,18 @@ func main() {
 	checking.Statement()
 	fmt.Println()
 	savings.Statement()
+   
+	fmt.Println("-------------------")
+	sql := NewQueryBuilder("users").
+    Select("name", "email").
+    Where("age > ?", 18).
+    OrderBy("name").
+    Limit(10).
+    Build()
+
+fmt.Println(sql)
+// Output: SELECT name, email FROM users WHERE age > 18 ORDER BY name LIMIT 10
+
 }
 
 // -----------------------------------------------------------------------
@@ -375,7 +387,7 @@ func (r *Rectangle) Scale(factor float64) {
 
 // Employee embeds Person — gains all Person fields and methods
 type Employee struct {
-	Person            // Embedded (anonymous) field
+	Person   // Embedded (anonymous) field
 	Company  string
 	Position string
 	Salary   int
@@ -631,7 +643,7 @@ func (b BaseShape) Describe() string {
 }
 
 type Circle struct {
-	BaseShape        // embedded — Circle inherits Describe()!
+	BaseShape // embedded — Circle inherits Describe()!
 	Radius    float64
 }
 
@@ -639,8 +651,8 @@ func (c Circle) Area() float64      { return math.Pi * c.Radius * c.Radius }
 func (c Circle) Perimeter() float64 { return 2 * math.Pi * c.Radius }
 
 type Rect struct {
-	BaseShape              // ← semicolon NOT comma for embedding!
-	Width, Height float64  // Width and Height are regular fields sharing float64
+	BaseShape             // ← semicolon NOT comma for embedding!
+	Width, Height float64 // Width and Height are regular fields sharing float64
 }
 
 func (r Rect) Area() float64      { return r.Width * r.Height }
@@ -649,7 +661,7 @@ func (r Rect) Perimeter() float64 { return 2 * (r.Width + r.Height) }
 type Config struct {
 	AppName  string `json:"app_name"`
 	Port     int    `json:"port"`
-	Debug    bool   `json:"debug"`           // ← was missing quotes around "debug"
+	Debug    bool   `json:"debug"` // ← was missing quotes around "debug"
 	DBConfig struct {
 		Host string `json:"host"`
 		Port int    `json:"port"`
@@ -658,9 +670,9 @@ type Config struct {
 }
 
 // LoadConfig parses a JSON string and returns a Config
-func LoadConfig(data string) (Config, error) {   // ← "json" is a package, not a type!
+func LoadConfig(data string) (Config, error) { // ← "json" is a package, not a type!
 	var c Config
-	err := json.Unmarshal([]byte(data), &c)       // ← Unmarshal reads JSON INTO the struct
+	err := json.Unmarshal([]byte(data), &c) // ← Unmarshal reads JSON INTO the struct
 	if err != nil {
 		return Config{}, err
 	}
@@ -669,12 +681,68 @@ func LoadConfig(data string) (Config, error) {   // ← "json" is a package, not
 
 // SaveConfig serializes a Config to pretty-printed JSON string
 func SaveConfig(c Config) (string, error) {
-	jsonBytes, err := json.MarshalIndent(c, "", "  ")  // ← Marshal converts struct TO JSON
+	jsonBytes, err := json.MarshalIndent(c, "", "  ") // ← Marshal converts struct TO JSON
 	if err != nil {
 		return "", err
 	}
 	return string(jsonBytes), nil
 }
+
+type QueryBuilder struct {
+	table      string
+	columns    []string
+	conditions []string
+	orderBy    string
+	limit      int
+}
+
+func NewQueryBuilder(table string) *QueryBuilder {
+	return &QueryBuilder{table: table}
+}
+
+func (q *QueryBuilder) Select(cols ...string) *QueryBuilder {
+	q.columns = cols
+	return q
+}
+
+func (q *QueryBuilder) Where(cond string, args ...any) *QueryBuilder {
+	// Replace ? with the actual argument values
+	for _, arg := range args {
+		cond = strings.Replace(cond, "?", fmt.Sprintf("%v", arg), 1)
+	}
+	q.conditions = append(q.conditions, cond)
+	return q
+}
+
+func (q *QueryBuilder) OrderBy(order string) *QueryBuilder {
+	q.orderBy = order
+	return q
+}
+
+func (q *QueryBuilder) Limit(lim int) *QueryBuilder {
+	q.limit = lim
+	return q
+}
+
+func (q *QueryBuilder) Build() string {
+	cols := "*"
+	if len(q.columns) > 0 {
+		cols = strings.Join(q.columns, ", ") // "name, email" not "nameemail"!
+	}
+	query := "SELECT " + cols + " FROM " + q.table // FROM not "Table"
+
+	if len(q.conditions) > 0 {
+		query += " WHERE " + strings.Join(q.conditions, " AND ")
+	}
+	if q.orderBy != "" {
+		query += " ORDER BY " + q.orderBy // "ORDER BY" not "Orderby"
+	}
+	if q.limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d", q.limit) // Sprintf, not string()!
+	}
+	return query
+}
+
 // ============================================================================
 // 🏋️ EXERCISES:
 //
