@@ -30,6 +30,9 @@ Go/
 │   ├── strings/          Module 2.3: Strings, runes, Builder, strconv, regex
 │   └── structs/          Module 2.4: Structs, methods, embedding, JSON tags
 ├── 03-interfaces/
+│   ├── shapes/           Module 3.1: Interfaces, type assertions, polymorphism
+│   ├── errors/           Module 3.2: Error handling, wrapping, Is/As, custom errors
+│   └── generics/         Module 3.3: Generics, constraints, generic types & patterns
 ├── 04-packages/
 ├── 05-concurrency/       ⭐ Go's killer feature
 ├── 06-stdlib/
