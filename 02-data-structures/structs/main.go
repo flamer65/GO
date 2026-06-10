@@ -312,7 +312,7 @@ func main() {
 	fmt.Println("-------------------")
 	sql := NewQueryBuilder("users").
     Select("name", "email").
-    Where("age > ?", 18).
+    Where("age > ? AND name = ?",18, "naman").
     OrderBy("name").
     Limit(10).
     Build()

@@ -292,6 +292,15 @@ func main() {
 	for _, row := range r {
 		fmt.Printf("  %v\n", row)
 	}
+
+	se := make([]int,0,3)
+	se = append(se,1,2,3)
+	s2 := append(se, 4)
+
+	se[0] = 999
+
+	fmt.Println(se)
+	fmt.Println(s2)
 }
 
 // -----------------------------------------------------------------------
@@ -363,38 +372,41 @@ func chunks(s []int, size int) [][]int {
 	}
 	return chunk
 }
+
 type Stack struct {
 	items []int
 }
-func NewStack() *Stack{
+
+func NewStack() *Stack {
 	return &Stack{
-		items: []int {},
+		items: []int{},
 	}
 }
 func (c *Stack) Push(v int) {
 	c.items = append(c.items, v)
 }
-func (c *Stack) Pop() (int,bool) {
+func (c *Stack) Pop() (int, bool) {
 	if len(c.items) == 0 {
 		return 0, false
 	}
 	n := len(c.items)
-	value := c.items[n -1]
+	value := c.items[n-1]
 	c.items = c.items[:n-1]
 	return value, true
 }
 func (c *Stack) Peek() (int, bool) {
-	if len(c.items) == 0{
+	if len(c.items) == 0 {
 		return 0, false
 	}
-	return c.items[len(c.items) -1], true
+	return c.items[len(c.items)-1], true
 }
-func (c *Stack) IsEmpty() bool{
+func (c *Stack) IsEmpty() bool {
 	return len(c.items) == 0
 }
-func (c *Stack) Size() int{
+func (c *Stack) Size() int {
 	return len(c.items)
 }
+
 // ============================================================================
 // 🏋️ EXERCISES:
 //

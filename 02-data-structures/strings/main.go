@@ -69,12 +69,9 @@ Great for regex, JSON templates, SQL queries!`
 	emoji := "Hello 🌍🚀"
 	chinese := "你好世界" // "Hello World" in Chinese
 
-	fmt.Printf("%-12s → len()=%2d bytes, runes=%2d\n",
-		`"Hello"`, len(ascii), len([]rune(ascii)))
-	fmt.Printf("%-12s → len()=%2d bytes, runes=%2d\n",
-		`"Hello 🌍🚀"`, len(emoji), len([]rune(emoji)))
-	fmt.Printf("%-12s → len()=%2d bytes, runes=%2d\n",
-		`"你好世界"`, len(chinese), len([]rune(chinese)))
+	fmt.Printf("%-12s → len()=%2d bytes, runes=%2d\n", `"Hello"`, len(ascii), len([]rune(ascii)))
+	fmt.Printf("%-12s → len()=%2d bytes, runes=%2d\n", `"Hello 🌍🚀"`, len(emoji), len([]rune(emoji)))
+	fmt.Printf("%-12s → len()=%2d bytes, runes=%2d\n", `"你好世界"`, len(chinese), len([]rune(chinese)))
 
 	// See the difference: byte iteration vs rune iteration
 	s := "Go🚀"
@@ -92,7 +89,7 @@ Great for regex, JSON templates, SQL queries!`
 	}
 
 	// Converting between types
-	bytes := []byte("Hello")
+	bytes := []byte("Hello 🌍")
 	fmt.Printf("\n[]byte: %v → string: %s\n", bytes, string(bytes))
 
 	runes := []rune("Hello 🌍")
@@ -398,7 +395,6 @@ func analyzeText(text string) textStats {
 			totalLen += len([]rune(cleaned))
 		}
 	}
-
 	stats.uniqueWords = len(freq)
 	if stats.words > 0 {
 		stats.avgWordLen = float64(totalLen) / float64(stats.words)
@@ -426,6 +422,77 @@ func analyzeText(text string) textStats {
 	}
 
 	return stats
+}
+func isPalindrome(s string) bool {
+	runes := make([]rune, 0, len([]rune(s)))
+	for _, r := range s {
+		if unicode.IsLetter(r) {
+			runes = append(runes, unicode.ToLower(r))
+		}
+
+	}
+	reversed := make([]rune, len(runes))
+	for i, r := range runes {
+		reversed[len(runes)-1-i] = r
+	}
+	return string(runes) == string(reversed)
+}
+
+func isPalindrome1(s string) bool {
+	n := len([]rune(s))
+	reversed := make([]rune, n)
+	filter := make([]rune,n)
+	i := 0
+	for _, r := range s{
+		if unicode.IsLetter(r) && i < n{
+		    reversed[n-1-i] = unicode.ToLower(r)
+			filter[i] = unicode.ToLower(r)
+			i++
+		}
+	}
+	return string(reversed) == string(filter)
+}
+func caesarCipher(s string, shift int) string{
+	r := []rune(s)
+	for i, chr := range r{
+		if chr >= 'a' && chr <= 'z'{
+			r[i] = 'a' + (chr - 'a' + rune(shift) % 26)
+		}else if chr >= 'A' && chr <= 'z'{
+			r[i] = 'A' + (chr - 'A' + rune(shift) % 26)
+		}
+	}
+	return string(r)
+}
+func truncate(s string, maxLen int) string {
+    r := []rune(s)
+    if len(r) <= maxLen {
+        return s           // already short enough, no truncation!
+    }
+    return string(r[:maxLen]) + "..."
+}
+
+func stripMarkdown(s string) string {
+    // Remove ``` code blocks (``` ... ```)
+    re := regexp.MustCompile("(?s)```.*?```")
+    s = re.ReplaceAllString(s, "")
+
+    // Remove # headers (e.g. "## Hello" → "Hello")
+    re = regexp.MustCompile(`(?m)^#+\s+`)
+    s = re.ReplaceAllString(s, "")
+
+    // Remove **bold** — keep inner text
+    re = regexp.MustCompile(`\*\*(.*?)\*\*`)
+    s = re.ReplaceAllString(s, "$1")
+
+    // Remove *italic* — keep inner text
+    re = regexp.MustCompile(`\*(.*?)\*`)
+    s = re.ReplaceAllString(s, "$1")
+
+    // Remove [text](url) links — keep text, drop URL
+    re = regexp.MustCompile(`\[(.*?)\]\(.*?\)`)
+    s = re.ReplaceAllString(s, "$1")
+
+    return strings.TrimSpace(s)
 }
 
 // ============================================================================
