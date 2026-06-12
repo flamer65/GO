@@ -283,6 +283,11 @@ func main() {
 		}
 	}
 	fmt.Printf("\n  Summary: %d processed, %d failed\n", processed, failed)
+
+	// Exercise 1
+	runExercise1()
+	// Exercise 2
+	runExercise2()
 }
 
 // -----------------------------------------------------------------------
@@ -542,6 +547,125 @@ func chargePayment(customer string, amount float64) error {
 	return nil
 }
 
+// ============================================================================
+// Exercise 1: FileError
+// ============================================================================
+
+// Step 1: Custom error type with Op, Path, and the underlying Err
+type FileError struct {
+	Op   string // e.g. "read", "write", "open"
+	Path string // e.g. "/etc/config.json"
+	Err  error  // the root cause
+}
+
+// Step 2: Error() — satisfies the error interface
+func (e *FileError) Error() string {
+	return fmt.Sprintf("file %s %q: %v", e.Op, e.Path, e.Err)
+}
+
+// Step 3: Unwrap() — lets errors.Is / errors.As walk into e.Err
+func (e *FileError) Unwrap() error {
+	return e.Err
+}
+
+// Sentinel error — a fixed error value we can check with errors.Is
+var ErrPermissionDenied = errors.New("permission denied")
+
+// Simulates opening a file — returns a FileError wrapping ErrPermissionDenied
+func openFile(path string) error {
+	return &FileError{Op: "open", Path: path, Err: ErrPermissionDenied}
+}
+
+// Adds another layer of wrapping using fmt.Errorf + %w
+func readConfig(path string) error {
+	if err := openFile(path); err != nil {
+		return fmt.Errorf("readConfig: %w", err)
+	}
+	return nil
+}
+
+func runExercise1() {
+	fmt.Println("\n=== Exercise 1: FileError ===")
+
+	err := readConfig("/etc/app/config.json")
+	if err == nil {
+		return
+	}
+
+	// Full chained message
+	fmt.Println("Error:", err)
+	// → readConfig: file open "/etc/app/config.json": permission denied
+
+	// errors.Is — walks the chain to find ErrPermissionDenied (3 levels deep)
+	fmt.Println("Is ErrPermissionDenied?", errors.Is(err, ErrPermissionDenied))
+	// → true
+
+	// errors.As — walks the chain to find *FileError, populates fe
+	var fe *FileError
+	if errors.As(err, &fe) {
+		fmt.Printf("FileError details → Op: %q  Path: %q\n", fe.Op, fe.Path)
+		// → Op: "open"  Path: "/etc/app/config.json"
+	}
+}
+
+type Result[T any] struct {
+	value T
+	err   error
+}
+
+// Constructors
+func Ok[T any](v T) Result[T]      { return Result[T]{value: v} }
+func Err[T any](e error) Result[T] { return Result[T]{err: e} }
+
+// IsOk — true if no error
+func (r Result[T]) IsOk() bool { return r.err == nil }
+
+// IsErr — true if there is an error
+func (r Result[T]) IsErr() bool { return r.err != nil }
+
+// Unwrap — returns value, panics if error
+func (r Result[T]) Unwrap() T {
+	if r.err != nil {
+		panic(r.err)
+	}
+	return r.value
+}
+
+// UnwrapOr — returns value, or the default if error
+func (r Result[T]) UnwrapOr(def T) T {
+	if r.err != nil {
+		return def
+	}
+	return r.value
+}
+
+// Map — transforms value if ok, passes error through unchanged
+func (r Result[T]) Map(fn func(T) T) Result[T] {
+	if r.err != nil {
+		return r // error passes through untouched
+	}
+	return Ok(fn(r.value))
+}
+
+func runExercise2() {
+	fmt.Println("\n=== Exercise 2: Result[T] ===")
+
+	// Success case
+	good := Ok(42)
+	fmt.Println("IsOk:", good.IsOk())           // true
+	fmt.Println("Value:", good.Unwrap())         // 42
+	fmt.Println("Doubled:", good.Map(func(v int) int { return v * 2 }).Unwrap()) // 84
+
+	// Failure case
+	bad := Err[int](errors.New("division by zero"))
+	fmt.Println("IsErr:", bad.IsErr())           // true
+	fmt.Println("UnwrapOr:", bad.UnwrapOr(-1))   // -1 (safe fallback)
+
+	// Map skips the fn on error
+	result := bad.Map(func(v int) int { return v * 2 })
+	fmt.Println("Map on error IsErr:", result.IsErr()) // true — error passed through
+ 
+}
 // ============================================================================
 // 🏋️ EXERCISES:
 //
